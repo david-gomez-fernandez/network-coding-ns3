@@ -210,6 +210,18 @@ public:
 
   Ptr<NetDevice> GetNetDevice (uint32_t i);
 
+  ////David/Ramón
+  typedef Callback <void, Ptr<Ipv4Route>, Ptr<const Packet>, const Ipv4Header &> IpForwardingCallback;
+  inline void SetIpForwardCallback (IpForwardingCallback callback) {m_ipForwardingCallback = callback;}
+  /**
+   * Connect to the private Ipv4L3Protocol::SendRealOut private member
+   * \param route
+   * \param packet
+   * \param ipHeader
+   */
+  inline void SendRealOutHook (Ptr<Ipv4Route> route, Ptr<Packet> packet, Ipv4Header const &ipHeader) {SendRealOut (route, packet, ipHeader);}
+  ////End David/Ramón
+
 protected:
 
   virtual void DoDispose (void);
@@ -311,6 +323,10 @@ private:
   TracedCallback<Ptr<const Packet>, Ptr<Ipv4>, uint32_t> m_rxTrace;
   // <ip-header, payload, reason, ifindex> (ifindex not valid if reason is DROP_NO_ROUTE)
   TracedCallback<const Ipv4Header &, Ptr<const Packet>, DropReason, Ptr<Ipv4>, uint32_t> m_dropTrace;
+
+  ////David/Ramón
+  IpForwardingCallback m_ipForwardingCallback;
+  ////End David/Ramón
 
   Ptr<Ipv4RoutingProtocol> m_routingProtocol;
 

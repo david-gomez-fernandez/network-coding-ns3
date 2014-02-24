@@ -232,6 +232,8 @@ TcpL4Protocol::Receive (Ptr<Packet> packet,
 
   packet->PeekHeader (tcpHeader);
 
+  //std::cout << Simulator::Now().GetSeconds() << " " << (int) m_node->GetId() << " :Receive " << tcpHeader << " DATA size " << packet->GetSize() <<  std::endl;
+
   NS_LOG_LOGIC ("TcpL4Protocol " << this
                                  << " receiving seq " << tcpHeader.GetSequenceNumber ()
                                  << " ack " << tcpHeader.GetAckNumber ()
@@ -248,6 +250,7 @@ TcpL4Protocol::Receive (Ptr<Packet> packet,
   Ipv4EndPointDemux::EndPoints endPoints =
     m_endPoints->Lookup (ipHeader.GetDestination (), tcpHeader.GetDestinationPort (),
                          ipHeader.GetSource (), tcpHeader.GetSourcePort (),incomingInterface);
+
   if (endPoints.empty ())
     {
       NS_LOG_LOGIC ("  No endpoints matched on TcpL4Protocol "<<this);
@@ -261,6 +264,7 @@ TcpL4Protocol::Receive (Ptr<Packet> packet,
 
       if (!(tcpHeader.GetFlags () & TcpHeader::RST))
         {
+          
           // build a RST packet and send
           Ptr<Packet> rstPacket = Create<Packet> ();
           TcpHeader header;
@@ -323,7 +327,7 @@ TcpL4Protocol::Send (Ptr<Packet> packet,
       header.SetProtocol (PROT_NUMBER);
       Socket::SocketErrno errno_;
       Ptr<Ipv4Route> route;
-      Ptr<NetDevice> oif (0); //specify non-zero if bound to a source address
+      Ptr<NetDevice> oif (0); 					//Specify non-zero if bound to a source address
       if (ipv4->GetRoutingProtocol () != 0)
         {
           route = ipv4->GetRoutingProtocol ()->RouteOutput (packet, header, oif, errno_);
@@ -333,6 +337,8 @@ TcpL4Protocol::Send (Ptr<Packet> packet,
           NS_LOG_ERROR ("No IPV4 Routing Protocol");
           route = 0;
         }
+
+//      NS_LOG_UNCOND (Simulator::Now().GetSeconds() << ": Send-> Source " << saddr << " Dest " << daddr << " SeqNum " << tcpHeader.GetSequenceNumber().GetValue() );
       ipv4->Send (packet, saddr, daddr, PROT_NUMBER, route);
     }
 }
@@ -378,6 +384,7 @@ TcpL4Protocol::SendPacket (Ptr<Packet> packet, const TcpHeader &outgoing,
           NS_LOG_ERROR ("No IPV4 Routing Protocol");
           route = 0;
         }
+//      NS_LOG_UNCOND (Simulator::Now().GetSeconds() << ": SendPacket-> Source " << saddr << " Dest " << daddr << " SeqNum " << outgoingHeader.GetSequenceNumber().GetValue() << " Size " << packet->GetSize());
       m_downTarget (packet, saddr, daddr, PROT_NUMBER, route);
     }
   else
@@ -397,4 +404,3 @@ TcpL4Protocol::GetDownTarget (void) const
 }
 
 } // namespace ns3
-

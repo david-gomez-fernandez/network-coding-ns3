@@ -27,6 +27,10 @@
 #include "wifi-mode.h"
 #include "wifi-preamble.h"
 
+////David/Ramón
+#include "yans-wifi-phy.h"
+////End David/Ramón
+
 namespace ns3 {
 
 class NetDevice;
@@ -83,6 +87,14 @@ public:
    */
   void Send (Ptr<YansWifiPhy> sender, Ptr<const Packet> packet, double txPowerDbm,
              WifiMode wifiMode, WifiPreamble preamble) const;
+
+  ////David/Ramón
+  /**
+   * In order to ease the node ID recognition, this method return a pointer to the vector that contains the list of instanced YansWifiPhy objects
+   */
+  inline std::vector<Ptr<YansWifiPhy> > GetPhyList () {return m_phyList;}
+  ////End David/Ramón
+
 
 private:
   YansWifiChannel& operator = (const YansWifiChannel &);

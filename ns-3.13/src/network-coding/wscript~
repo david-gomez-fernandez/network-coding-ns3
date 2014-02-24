@@ -1,0 +1,56 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+# def options(opt):
+#     pass
+
+# def configure(conf):
+#     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
+
+def configure(conf): 
+    conf.env.append_value('LINKFLAGS', ['-lcrypto', '-lgsl', '-lgslcblas'])
+    have_itpp = conf.pkg_check_modules('IT++', 'itpp', mandatory=True)
+    conf.env['ENABLE_ITPP'] = have_itpp
+    conf.report_optional_feature("IT++", "IT++ library",
+                                 conf.env['ENABLE_ITPP'],
+                                 "IT++ not found")
+    if conf.env['ENABLE_ITPP']:
+        conf.env.append_value('CXXFLAGS', '-DNO_INT_SIZE_CHECK')
+
+def build(bld):
+    module = bld.create_ns3_module('network-coding', ['core','wifi','network','internet','propagation'])
+    module.source = [
+        'model/network-coding-l4-protocol.cc',
+        'model/inter-flow-network-coding-protocol.cc',        
+        'model/inter-flow-network-coding-header.cc',
+        'model/inter-flow-network-coding-buffer.cc',
+        'model/intra-flow-network-coding-protocol.cc',     
+        'model/intra-flow-network-coding-header.cc',   
+        'helper/network-coding-helper.cc'   
+        ]
+
+    module_test = bld.create_ns3_module_test_library('network-coding')
+    module_test.source = [
+        'test/network-coding-test-suite.cc',
+        ]
+
+    headers = bld.new_task_gen(features=['ns3header'])
+    headers.module = 'network-coding'
+    headers.source = [
+        'model/network-coding-l4-protocol.h',
+        'model/inter-flow-network-coding-protocol.h',        
+        'model/inter-flow-network-coding-header.h',
+        'model/inter-flow-network-coding-buffer.h',
+        'model/intra-flow-network-coding-protocol.h',     
+        'model/intra-flow-network-coding-header.h',  
+        'helper/network-coding-helper.h',
+        'utils/hash-id.h'     
+        ]
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.add_subdirs('examples')
+
+    # bld.ns3_python_bindings()
+
+def configure(conf):
+    conf.env.append_value('LINKFLAGS', '-lcrypto')
+

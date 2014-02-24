@@ -61,6 +61,10 @@ public:
   uint32_t GetMaxSize (void) const;
   Time GetMaxDelay (void) const;
 
+  ////Eduardo/David/Ramón
+   void SelectiveFlush (u_int16_t hash);
+   ////End Eduardo/David/Ramón
+
   void Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr);
   void PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr);
   Ptr<const Packet> Dequeue (WifiMacHeader *hdr);

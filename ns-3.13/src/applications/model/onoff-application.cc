@@ -45,6 +45,12 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED (OnOffApplication);
 
+
+////David/Ramón
+#undef NS_LOG_APPEND_CONTEXT
+#define NS_LOG_APPEND_CONTEXT                                   \
+  if (m_node) { std::clog << Simulator::Now ().GetSeconds () << " [node " << m_node->GetId () << "] "; }
+
 TypeId
 OnOffApplication::GetTypeId (void)
 {
@@ -242,7 +248,15 @@ void OnOffApplication::SendPacket ()
   NS_LOG_FUNCTION_NOARGS ();
   NS_LOG_LOGIC ("sending packet at " << Simulator::Now ());
   NS_ASSERT (m_sendEvent.IsExpired ());
-  Ptr<Packet> packet = Create<Packet> (m_pktSize);
+
+  ////David/Ramón
+  NS_LOG_INFO ("OnOff --> Send Packet " << (this));
+//  Ptr<Packet> packet = Create<Packet> (m_pktSize);     		//We are going to create a random payload instead of the legacy zero-padding
+  Ptr<Packet> packet = CreateRandomPayload (m_pktSize);			// Random payload mode on
+  m_stats.txCounter ++;
+  m_stats.txTimestamp.push_back(Simulator::Now().GetSeconds());
+  ////End David/Ramón
+
   m_txTrace (packet);
   m_socket->Send (packet);
   m_totBytes += m_pktSize;

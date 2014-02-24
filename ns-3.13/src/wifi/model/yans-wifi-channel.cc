@@ -26,7 +26,7 @@
 #include "ns3/pointer.h"
 #include "ns3/object-factory.h"
 #include "yans-wifi-channel.h"
-#include "yans-wifi-phy.h"
+//#include "yans-wifi-phy.h"
 #include "ns3/propagation-loss-model.h"
 #include "ns3/propagation-delay-model.h"
 
@@ -94,8 +94,10 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const Packet> packet, double
           Ptr<MobilityModel> receiverMobility = (*i)->GetMobility ()->GetObject<MobilityModel> ();
           Time delay = m_delay->GetDelay (senderMobility, receiverMobility);
           double rxPowerDbm = m_loss->CalcRxPower (txPowerDbm, senderMobility, receiverMobility);
+
           NS_LOG_DEBUG ("propagation: txPower=" << txPowerDbm << "dbm, rxPower=" << rxPowerDbm << "dbm, " <<
                         "distance=" << senderMobility->GetDistanceFrom (receiverMobility) << "m, delay=" << delay);
+
           Ptr<Packet> copy = packet->Copy ();
           Ptr<Object> dstNetDevice = m_phyList[j]->GetDevice ();
           uint32_t dstNode;
@@ -118,7 +120,7 @@ void
 YansWifiChannel::Receive (uint32_t i, Ptr<Packet> packet, double rxPowerDbm,
                           WifiMode txMode, WifiPreamble preamble) const
 {
-  m_phyList[i]->StartReceivePacket (packet, rxPowerDbm, txMode, preamble);
+	m_phyList[i]->StartReceivePacket (packet, rxPowerDbm, txMode, preamble);
 }
 
 uint32_t

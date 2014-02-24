@@ -23,7 +23,7 @@ def build(bld):
         'model/tag.cc',
         'model/tag-buffer.cc',
         'model/trailer.cc',
-	'utils/address-utils.cc',
+	    'utils/address-utils.cc',
         'utils/data-rate.cc',
         'utils/drop-tail-queue.cc',
         'utils/error-model.cc',
@@ -49,6 +49,7 @@ def build(bld):
         'utils/radiotap-header.cc',
         'utils/simple-channel.cc',
         'utils/simple-net-device.cc',
+        'utils/hash-id.cc',         #David/Ramón
         'helper/application-container.cc',
         'helper/net-device-container.cc',
         'helper/node-container.cc',
@@ -67,7 +68,7 @@ def build(bld):
         'test/sequence-number-test-suite.cc',
         ]
 
-    headers = bld.new_task_gen(features=['ns3header'])
+    headers = bld.new_task_gen(features=['ns3header'])  
     headers.module = 'network'
     headers.source = [
         'model/address.h',
@@ -120,6 +121,7 @@ def build(bld):
         'utils/simple-channel.h',
         'utils/simple-net-device.h',
         'utils/pcap-test.h',
+        'utils/hash-id.h',         #David/Ramón
         'helper/application-container.h',
         'helper/net-device-container.h',
         'helper/node-container.h',

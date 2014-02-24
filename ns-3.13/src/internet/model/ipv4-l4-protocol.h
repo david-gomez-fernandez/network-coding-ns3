@@ -106,6 +106,7 @@ public:
    * \return current Callback for the L4 protocol
    */
   virtual DownTargetCallback GetDownTarget (void) const = 0;
+  
 };
 
 } // Namespace ns3

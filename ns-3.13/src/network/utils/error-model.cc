@@ -19,6 +19,8 @@
  * This code has been ported from ns-2 (queue/errmodel.{cc,h}
  */
 
+
+#include <stdio.h>
 #include <math.h>
 
 #include "error-model.h"
@@ -30,6 +32,7 @@
 #include "ns3/boolean.h"
 #include "ns3/enum.h"
 #include "ns3/double.h"
+
 
 NS_LOG_COMPONENT_DEFINE ("ErrorModel");
 
@@ -366,5 +369,93 @@ ReceiveListErrorModel::DoReset (void)
   m_packetList.clear ();
 }
 
+////David/Ramón
+
+NS_OBJECT_ENSURE_REGISTERED (MatrixErrorModel);
+
+TypeId
+MatrixErrorModel::GetTypeId(void) {
+	static TypeId tid = TypeId ("ns3::MatrixErrorModel")
+		.SetParent<ErrorModel> ()
+	    .AddConstructor<MatrixErrorModel> ()
+	    .AddAttribute("DefaultFer",
+			"Default FER value for all the non-set links",
+			DoubleValue(0.0),
+			MakeDoubleAccessor(&MatrixErrorModel::m_default),
+			MakeDoubleChecker<double> (0.0, 1.0))
+
+	;
+  return tid;
+}
+
+MatrixErrorModel::MatrixErrorModel ()
+{
+	NS_LOG_FUNCTION (this);
+}
+
+MatrixErrorModel::~MatrixErrorModel ()
+{
+	NS_LOG_FUNCTION (this);
+}
+
+void
+MatrixErrorModel::SetFer (u_int16_t tx, u_int16_t rx, double fer)
+{
+  NS_LOG_INFO ("MatrixPropagationLossErrorModel::SetFer | " << (int) tx  << " -> " << rx << " : FER = " << fer );
+
+  LinkPair p = std::make_pair (tx,rx);
+  std::map<LinkPair, double>::iterator i = m_ferMatrix.find (p);
+
+  if (i == m_ferMatrix.end ())
+      m_ferMatrix.insert (std::make_pair (p, fer));
+  else
+      i->second = fer;
+}
+
+
+
+bool MatrixErrorModel::DoCorrupt (Ptr<Packet> p)
+{
+	NS_LOG_FUNCTION_NOARGS ();
+
+	double fer;
+	UniformVariable random (0.0, 1.0);
+
+	//Check if the frame had been defined as correct (i.e. ARP, 802.11 ACK...)
+	if (m_isCorrect || p->GetSize() < 1000)    //Temporal solution --> Only data packets (filtered by their length, which is supposed to be longer than the rest of the possible packets) will be error prone
+		return false;
+
+	//Look up the FER value into the matrix
+	std::map<LinkPair, double>::const_iterator i = m_ferMatrix.find (std::make_pair (m_transmitter, m_receiver));
+	if (i != m_ferMatrix.end ())
+		fer = i->second;
+	else
+		fer = m_default;
+
+	//Compare to a random value
+	if (random.GetValue() > fer)
+	{
+		NS_LOG_INFO (Simulator::Now().GetSeconds() <<  " " << m_transmitter << " -> " << m_receiver << " : CORRECT " << "(" << fer << ")" );
+		return false;
+	}
+	else
+	{
+		NS_LOG_INFO (Simulator::Now().GetSeconds() <<  " " << m_transmitter << " -> " << m_receiver << " : CORRUPT" << "(" << fer << ")" );
+		return true;
+	}
+}
+
+
+void MatrixErrorModel::DoReset ()
+{
+	NS_LOG_FUNCTION_NOARGS();
+
+	if (m_ferMatrix.size())
+		m_ferMatrix.clear();
+}
+
+
+
+////End David/Ramón
 
 } // namespace ns3

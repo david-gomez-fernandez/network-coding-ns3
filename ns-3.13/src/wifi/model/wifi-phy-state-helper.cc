@@ -388,6 +388,10 @@ WifiPhyStateHelper::SwitchFromRxEndError (Ptr<const Packet> packet, double snr)
     }
 }
 
+
+
+////End David/Ramón
+
 void
 WifiPhyStateHelper::DoSwitchFromRx (void)
 {

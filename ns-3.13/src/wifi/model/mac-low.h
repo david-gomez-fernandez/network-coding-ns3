@@ -438,24 +438,29 @@ public:
                           MacLowTransmissionParameters parameters,
                           MacLowTransmissionListener *listener);
 
+
   /**
    * \param packet packet received
    * \param rxSnr snr of packet received
    * \param txMode transmission mode of packet received
    * \param preamble type of preamble used for the packet received
+   * \param nodeId ID of the node which received the frame
    *
    * This method is typically invoked by the lower PHY layer to notify
    * the MAC layer that a packet was successfully received.
    */
+
   void ReceiveOk (Ptr<Packet> packet, double rxSnr, WifiMode txMode, WifiPreamble preamble);
   /**
    * \param packet packet received.
    * \param rxSnr snr of packet received.
+   * \param nodeId ID of the node which received the frame
    *
    * This method is typically invoked by the lower PHY layer to notify
    * the MAC layer that a packet was unsuccessfully received.
    */
   void ReceiveError (Ptr<const Packet> packet, double rxSnr);
+
   /**
    * \param duration switching delay duration.
    *

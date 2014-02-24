@@ -208,6 +208,14 @@ public:
    */
   void Stop (Time stop);
 
+  ////David
+  /*
+   * Force the reset of the vector (Network Monitor)
+   */
+  inline void Reset () {m_applications.clear();}
+
+  ////End David/Ramón
+
 private:
   std::vector<Ptr<Application> > m_applications;
 };

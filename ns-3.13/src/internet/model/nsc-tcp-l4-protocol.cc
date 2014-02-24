@@ -45,6 +45,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
 NS_LOG_COMPONENT_DEFINE ("NscTcpL4Protocol");
 
 namespace ns3 {
@@ -195,16 +196,17 @@ NscTcpL4Protocol::NotifyNewAggregate ()
       Ptr<Node>node = this->GetObject<Node> ();
       if (node != 0)
         {
-          Ptr<Ipv4L3Protocol> ipv4 = this->GetObject<Ipv4L3Protocol> ();
-          if (ipv4 != 0)
-            {
-              this->SetNode (node);
-              ipv4->Insert (this);
-              Ptr<NscTcpSocketFactoryImpl> tcpFactory = CreateObject<NscTcpSocketFactoryImpl> ();
-              tcpFactory->SetTcp (this);
-              node->AggregateObject (tcpFactory);
-              this->SetDownTarget (MakeCallback (&Ipv4L3Protocol::Send, ipv4));
-            }
+    	  Ptr<Ipv4L3Protocol> ipv4 = this->GetObject<Ipv4L3Protocol> ();
+
+    	  if (ipv4 != 0)
+    	  {
+    		  this->SetNode (node);
+    		  ipv4->Insert (this);
+    		  Ptr<NscTcpSocketFactoryImpl> tcpFactory = CreateObject<NscTcpSocketFactoryImpl> ();
+    		  tcpFactory->SetTcp (this);
+    		  node->AggregateObject (tcpFactory);
+    		  this->SetDownTarget (MakeCallback (&Ipv4L3Protocol::Send, ipv4)); ////David/Ramón --> Comment test (remember to undo) --> The is the only legacy code line
+    	  }
         }
     }
   Object::NotifyNewAggregate ();
@@ -352,7 +354,6 @@ void NscTcpL4Protocol::send_callback (const void* data, int datalen)
 
   NS_ASSERT (datalen > 20);
 
-
   // create packet, without IP header. The TCP header is not touched.
   // Not using the IP header makes integration easier, but it destroys
   // eg. ECN.
@@ -459,13 +460,13 @@ void NscTcpL4Protocol::AddInterface (void)
 void
 NscTcpL4Protocol::SetDownTarget (Ipv4L4Protocol::DownTargetCallback callback)
 {
-  m_downTarget = callback;
+	m_downTarget = callback;
 }
 
 Ipv4L4Protocol::DownTargetCallback
 NscTcpL4Protocol::GetDownTarget (void) const
 {
-  return m_downTarget;
+	return m_downTarget;
 }
 
 } // namespace ns3

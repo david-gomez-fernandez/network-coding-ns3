@@ -533,7 +533,7 @@ private:
   /// default loss
   double m_default; 
 
-  typedef std::pair< Ptr<MobilityModel>, Ptr<MobilityModel> > MobilityPair; 
+  typedef std::pair< Ptr<MobilityModel>, Ptr<MobilityModel> > MobilityPair;
   /// Fixed loss between pair of nodes
   std::map<MobilityPair, double> m_loss;
 };
@@ -553,6 +553,10 @@ class RangePropagationLossModel : public PropagationLossModel
 public:
   static TypeId GetTypeId (void);
   RangePropagationLossModel ();
+
+  ////David/Ramón
+  virtual ~RangePropagationLossModel ();
+
 private:
   RangePropagationLossModel (const RangePropagationLossModel& o);
   RangePropagationLossModel& operator= (const RangePropagationLossModel& o);
@@ -561,7 +565,85 @@ private:
                                 Ptr<MobilityModel> b) const;
 private:
   double m_range;
+
+  ////David/Ramón
+  double m_firstRangeDistance;
+  double m_secondRangeDistance;
+
 };
+
+////David/Ramón
+//////////////////  SimplePropagationLossModel (authors: David Gómez Fernández / Ramón Agüero Calvo)   //////////////////
+
+/**
+ * \brief Naive propagation model which depends exclusively on the distance between the source and the destination
+ * (shortest distance - linear path).
+ *
+ * This model corresponds with a deterministic channel model behavior, where all packets arrive
+ * correctly to the receiver if the distance between the two nodes are smaller than a preset value.
+ * Once this value is reached, the error rate begins to increase (following a beta-dependent decreasing
+ * factor), according to the following expression:
+ *
+ *			   /               1,					  if 	 0 <= x < alpha * d_max
+ *			   |
+ *			   |      1 - (x/(d_max))^beta
+ *  1 - FER = <      ------------------------ , 	  if     alpha * d_max <= x <= d_max
+ *			   |		1 - alpha^beta
+ *			   |
+ *			   \		  	   0,					  if 	 d_max < x
+ *
+ * Receivers beyond MaxRange receive at power -1000 dBm (effectively zero).
+ *
+ *
+ */
+
+class SimplePropagationLossModel: public PropagationLossModel
+{
+public:
+	static TypeId GetTypeId(void);
+
+	SimplePropagationLossModel();
+	virtual ~SimplePropagationLossModel();
+
+
+	/**
+	 *  \param alpha the exponential parameter applied in the expression
+	 */
+	void SetAlpha(float alpha);
+	/**
+	 *  \returns the exponential parameter (alpha) to be used in the model
+	 */
+	float GetAlpha(void) const;
+	/**
+	 *  \param beta the exponential parameter applied in the expression
+	 */
+	void SetBeta(float beta);
+	/**
+	 *  \returns the exponential parameter (beta) to be used in the model
+	 */
+	float GetBeta(void) const;
+	/**
+	 *  \param alpha the exponential parameter applied in the expression
+	 */
+	void SetMaxDistance(float maxDistance);
+	/**
+	 * \returns the maximum distance for a wireless transmission in the model. From this distance, FER = 1
+	 */
+	float GetMaxDistance(void) const;
+
+private:
+	SimplePropagationLossModel (const SimplePropagationLossModel& o);
+	SimplePropagationLossModel & operator=(const SimplePropagationLossModel& o);
+	virtual double DoCalcRxPower(double txPowerDbm, Ptr<MobilityModel> a,
+			Ptr<MobilityModel> b) const;
+
+	//class specific parameters
+	float m_maxDistance;
+	float m_alpha;
+	float m_beta;
+	RandomVariable m_ranvar;
+};
+
 
 } // namespace ns3
 

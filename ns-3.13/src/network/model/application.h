@@ -27,6 +27,11 @@
 #include "ns3/ptr.h"
 #include "ns3/node.h"
 
+////David/Ramón
+#include "ns3/packet.h"			////David/Ramón
+#include <vector>
+////End David/Ramón
+
 namespace ns3 {
 
 class Node;
@@ -53,6 +58,18 @@ class RandomVariable;
  * The main purpose of the base class application public API is to
  * provide a uniform way to start and stop applications.
  */
+
+////David/Ramón
+struct ApplicationStatistics {
+	ApplicationStatistics();
+	u_int32_t txCounter;
+	u_int32_t rxCounter;
+
+	std::vector<double> txTimestamp;
+	std::vector<double> rxTimestamp;
+};
+
+////End David/Ramón
 
 /**
 * \brief The base class for all ns3 applications
@@ -101,6 +118,20 @@ public:
    */
   void SetNode (Ptr<Node> node);
 
+  ////David/Ramón
+  /**
+   * Create a random-filled packet of a determined size
+   * \param size Packet size to fill
+   * \returns A packet with random data content (Payload)
+   */
+  Ptr<Packet> CreateRandomPayload (u_int32_t size);
+
+  /*
+   * Share the statistics (tracing purposes)
+   */
+  ApplicationStatistics& GetStats () {return m_stats;}
+  ////End David/Ramón
+
 private:
   /**
    * \brief Application specific startup code
@@ -128,6 +159,9 @@ protected:
   Time m_stopTime;
   EventId m_startEvent;
   EventId m_stopEvent;
+
+  ////David/Ramón
+  ApplicationStatistics m_stats;
 };
 
 } // namespace ns3

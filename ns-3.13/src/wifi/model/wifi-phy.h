@@ -108,7 +108,6 @@ public:
   virtual void NotifySwitchingStart (Time duration) = 0;
 };
 
-
 /**
  * \brief 802.11 PHY layer model
  * \ingroup wifi

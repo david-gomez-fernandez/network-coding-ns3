@@ -232,6 +232,7 @@ int
 TcpSocketBase::Bind (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+
   m_endPoint = m_tcp->Allocate ();
   if (0 == m_endPoint)
     {
@@ -1451,6 +1452,7 @@ TcpSocketBase::SendPendingData (bool withAck)
           NS_LOG_LOGIC ("Invoking Nagle's algorithm. Wait to send.");
           break;
         }
+
       uint32_t s = std::min (w, m_segmentSize);  // Send no more than window
       uint32_t sz = SendDataPacket (m_nextTxSequence, s, withAck);
       nPacketsSent++;                             // Count sent this loop
@@ -1567,7 +1569,7 @@ TcpSocketBase::EstimateRtt (const TcpHeader& tcpHeader)
 void
 TcpSocketBase::NewAck (SequenceNumber32 const& ack)
 {
-  NS_LOG_FUNCTION (this << ack);
+  NS_LOG_FUNCTION (this << ack);  
 
   if (m_state != SYN_RCVD)
     { // Set RTO unless the ACK is received in SYN_RCVD state

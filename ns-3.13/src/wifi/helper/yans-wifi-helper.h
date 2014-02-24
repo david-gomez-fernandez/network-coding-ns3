@@ -25,6 +25,9 @@
 #include "ns3/yans-wifi-channel.h"
 #include "ns3/deprecated.h"
 
+#include "ns3/propagation-loss-model.h"
+#include "ns3/error-model.h"
+
 namespace ns3 {
 
 /**
@@ -88,6 +91,21 @@ public:
                            std::string n5 = "", const AttributeValue &v5 = EmptyAttributeValue (),
                            std::string n6 = "", const AttributeValue &v6 = EmptyAttributeValue (),
                            std::string n7 = "", const AttributeValue &v7 = EmptyAttributeValue ());
+
+
+  /** Add a propagation loss model to the set of currently-configured loss models.
+   * This method is additive to allow you to construct complex propagation loss models
+   * such as a log distance + jakes model, etc.
+   *
+   * The order in which PropagationLossModels are added may be significant. Some
+   * propagation models are dependent of the "txPower" (eg. Nakagami model), and
+   * are therefore not commutative. The final receive power (excluding receiver
+   * gains) are calculated in the order the models are added.
+   */
+  void AddPropagationLoss (Ptr<PropagationLossModel> loss);
+
+
+
   /**
    * \param name the name of the model to set
    * \param n0 the name of the attribute to set
@@ -129,6 +147,9 @@ public:
 private:
   std::vector<ObjectFactory> m_propagationLoss;
   ObjectFactory m_propagationDelay;
+
+  std::vector<Ptr <PropagationLossModel> > m_propagationLossModelVector;
+
 };
 
 /**
@@ -169,6 +190,11 @@ public:
    * Every PHY created by a call to Install is associated to this channel.
    */
   void SetChannel (std::string channelName);
+
+  ////David/Ramón
+  inline Ptr<YansWifiChannel> GetChannel () {return m_channel;}
+  ////End David/Ramón
+
   /**
    * \param name the name of the attribute to set
    * \param v the value of the attribute
@@ -206,6 +232,42 @@ public:
                           std::string n5 = "", const AttributeValue &v5 = EmptyAttributeValue (),
                           std::string n6 = "", const AttributeValue &v6 = EmptyAttributeValue (),
                           std::string n7 = "", const AttributeValue &v7 = EmptyAttributeValue ());
+
+  /**
+     * \param name the name of the error rate model to set.
+     * \param n0 the name of the attribute to set
+     * \param v0 the value of the attribute to set
+     * \param n1 the name of the attribute to set
+     * \param v1 the value of the attribute to set
+     * \param n2 the name of the attribute to set
+     * \param v2 the value of the attribute to set
+     * \param n3 the name of the attribute to set
+     * \param v3 the value of the attribute to set
+     * \param n4 the name of the attribute to set
+     * \param v4 the value of the attribute to set
+     * \param n5 the name of the attribute to set
+     * \param v5 the value of the attribute to set
+     * \param n6 the name of the attribute to set
+     * \param v6 the value of the attribute to set
+     * \param n7 the name of the attribute to set
+     * \param v7 the value of the attribute to set
+     *
+     * Set the error model and its attributes to use when Install is called.
+     */
+    void SetErrorModel (std::string name,
+                            std::string n0 = "", const AttributeValue &v0 = EmptyAttributeValue (),
+                            std::string n1 = "", const AttributeValue &v1 = EmptyAttributeValue (),
+                            std::string n2 = "", const AttributeValue &v2 = EmptyAttributeValue (),
+                            std::string n3 = "", const AttributeValue &v3 = EmptyAttributeValue (),
+                            std::string n4 = "", const AttributeValue &v4 = EmptyAttributeValue (),
+                            std::string n5 = "", const AttributeValue &v5 = EmptyAttributeValue (),
+                            std::string n6 = "", const AttributeValue &v6 = EmptyAttributeValue (),
+                            std::string n7 = "", const AttributeValue &v7 = EmptyAttributeValue ());
+
+    Ptr<ErrorModel> GetErrorModel() const;
+
+    void SetErrorModel(Ptr<ErrorModel> errorModel);
+        
 
   /**
    * An enumeration of the pcap data link types (DLTs) which this helper
@@ -274,6 +336,12 @@ private:
 
   ObjectFactory m_phy;
   ObjectFactory m_errorRateModel;
+  
+
+  ObjectFactory m_errorModelFactory;
+  Ptr<ErrorModel> m_errorModel;
+
+
   Ptr<YansWifiChannel> m_channel;
   uint32_t m_pcapDlt;
 };

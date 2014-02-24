@@ -396,6 +396,7 @@ PacketSocket::ForwardUp (Ptr<NetDevice> device, Ptr<const Packet> packet,
       //
       // drop and trace packet
       NS_LOG_WARN ("No receive buffer space available.  Drop.");
+
       m_dropTrace (packet);
     }
 }

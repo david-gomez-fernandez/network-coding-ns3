@@ -23,6 +23,15 @@
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
 
+////Eduardo/David/Ramón
+#include "ns3/wifi-mac-header.h"
+#include "ns3/llc-snap-header.h"
+#include "ns3/ipv4-header.h"
+#include "ns3/udp-header.h"
+#include "ns3/intra-flow-network-coding-header.h"
+#include "ns3/hash-id.h"
+////End Eduardo/David/Ramón
+
 #include "wifi-mac-queue.h"
 #include "qos-blocked-destinations.h"
 
@@ -92,6 +101,67 @@ WifiMacQueue::GetMaxDelay (void) const
 {
   return m_maxDelay;
 }
+
+
+////Eduardo/David/Ramón
+void WifiMacQueue::SelectiveFlush (u_int16_t hash)
+{
+
+	Ptr<Packet> copy;
+	PacketQueueI it = m_queue.begin ();
+	//for (it= m_queue.begin (); it != m_queue.end (); it++)
+	while(it!=m_queue.end ())
+	{
+		copy=it->packet->Copy ();
+		LlcSnapHeader llcHeader;
+		Ipv4Header ipHeader;
+		IntraFlowNetworkCodingHeader ncHeader;
+		UdpHeader udpHeader;
+		copy->RemoveHeader (llcHeader);
+		switch (llcHeader.GetType ())
+		{
+		case 0x0806:            //ARP
+			break;
+		case 0x0800:            //IP packet
+		{
+			copy->RemoveHeader(ipHeader);
+			switch (ipHeader.GetProtocol ())
+			{
+			case 6:             //TCP
+				break;
+			case 17:            //UDP
+				break;
+			case 99:    //Network Coding --> Force the shortest frames to be correct
+				break;
+			case 100:	// MORE
+			{
+				copy->RemoveHeader (ncHeader);
+				u_int16_t chosenBuffer = HashID (ipHeader.GetSource (), ipHeader.GetDestination (), ncHeader.GetSourcePort (), ncHeader.GetDestinationPort ());
+				if (chosenBuffer==hash && ncHeader.GetTx ()==0)
+				{
+					PacketQueueI aux=it;
+					it++;
+					m_queue.erase (aux);
+					m_size--;
+					//it= m_queue.begin ();
+				}
+				else
+				{
+					it++;
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		break;
+		default:
+			break;
+		}
+	}
+}
+////End Eduardo/David/Ramón
 
 void
 WifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)

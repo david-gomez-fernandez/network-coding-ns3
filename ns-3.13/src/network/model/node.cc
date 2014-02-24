@@ -222,7 +222,6 @@ Node::RegisterProtocolHandler (ProtocolHandler handler,
           device->SetPromiscReceiveCallback (MakeCallback (&Node::PromiscReceiveFromDevice, this));
         }
     }
-
   m_handlers.push_back (entry);
 }
 

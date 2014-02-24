@@ -1,0 +1,482 @@
+# HG changeset patch
+# Parent ab3920dbfbef6e1e59062abeb63467ca34ef767e
+# Date 1328302489 -3600
+# User Tommaso Pecorella <tommaso.pecorella@unifi.it>
+
+RttEstimator class bugfix, documentation improvements and code cleanup
+
+diff --git a/src/internet/model/rtt-estimator.cc b/src/internet/model/rtt-estimator.cc
+--- a/src/internet/model/rtt-estimator.cc
++++ b/src/internet/model/rtt-estimator.cc
+@@ -30,6 +30,7 @@
+ #include "rtt-estimator.h"
+ #include "ns3/simulator.h"
+ #include "ns3/double.h"
++#include "ns3/integer.h"
+ 
+ namespace ns3 {
+ 
+@@ -42,15 +43,14 @@
+   static TypeId tid = TypeId ("ns3::RttEstimator")
+     .SetParent<Object> ()
+     .AddAttribute ("MaxMultiplier", 
+-                   "XXX",
+-                   DoubleValue (64.0),
++                   "Maximum RTO Multiplier",
++                   IntegerValue (64),
+                    MakeDoubleAccessor (&RttEstimator::m_maxMultiplier),
+-                   MakeDoubleChecker<double> ())
++                   MakeIntegerChecker<u_int16_t> ())
+     .AddAttribute ("InitialEstimation", 
+-                   "XXX",
++                   "Initial RTT estimation",
+                    TimeValue (Seconds (1.0)),
+-                   MakeTimeAccessor (&RttEstimator::SetEstimate,
+-                                     &RttEstimator::GetEstimate),
++                   MakeTimeAccessor (&RttEstimator::m_initialEstimatedRtt),
+                    MakeTimeChecker ())
+     .AddAttribute ("MinRTO", 
+                    "Minimum retransmit timeout value",
+@@ -65,22 +65,22 @@
+ void 
+ RttEstimator::SetMinRto (Time minRto)
+ {
+-  minrto = minRto;
++  m_minRto = minRto;
+ }
+ Time 
+ RttEstimator::GetMinRto (void) const
+ {
+-  return Time (minrto);
++  return Time (m_minRto);
+ }
+ void 
+-RttEstimator::SetEstimate (Time estimate)
++RttEstimator::SetCurrentEstimate (Time estimate)
+ {
+-  est = estimate;
++  m_currentEstimatedRtt = estimate;
+ }
+ Time 
+-RttEstimator::GetEstimate (void) const
++RttEstimator::GetCurrentEstimate (void) const
+ {
+-  return Time (est);
++  return Time (m_currentEstimatedRtt);
+ }
+ 
+ 
+@@ -97,43 +97,38 @@
+ 
+ // Base class methods
+ 
+-RttEstimator::RttEstimator () : next (1), history (),
+-                                nSamples (0), multiplier (1.0)
++RttEstimator::RttEstimator ()
++  : m_next (1), m_history (),
++    m_currentEstimatedRtt(m_initialEstimatedRtt),
++    m_nSamples (0),
++    m_multiplier (1)
+ { 
+   //note next=1 everywhere since first segment will have sequence 1
+ }
+ 
+-RttEstimator::RttEstimator(const RttEstimator& c)
+-  : Object (c), next (c.next), history (c.history),
+-    m_maxMultiplier (c.m_maxMultiplier), est (c.est),
+-    minrto (c.minrto), nSamples (c.nSamples),
+-    multiplier (c.multiplier)
+-{
+-}
+-
+ RttEstimator::~RttEstimator ()
+ {
+ }
+ 
+-void RttEstimator::SentSeq (SequenceNumber32 s, uint32_t c)
++void RttEstimator::SentSeq (SequenceNumber32 seq, uint32_t size)
+ { // Note that a particular sequence has been sent
+-  if (s == next)
++  if (seq == m_next)
+     { // This is the next expected one, just log at end
+-      history.push_back (RttHistory (s, c, Simulator::Now () ));
+-      next = s + SequenceNumber32 (c); // Update next expected
++      m_history.push_back (RttHistory (seq, size, Simulator::Now () ));
++      m_next = seq + SequenceNumber32 (size); // Update next expected
+     }
+   else
+     { // This is a retransmit, find in list and mark as re-tx
+-      for (RttHistory_t::iterator i = history.begin (); i != history.end (); ++i)
++      for (RttHistory_t::iterator i = m_history.begin (); i != m_history.end (); ++i)
+         {
+-          if ((s >= i->seq) && (s < (i->seq + SequenceNumber32 (i->count))))
++          if ((seq >= i->seq) && (seq < (i->seq + SequenceNumber32 (i->count))))
+             { // Found it
+               i->retx = true;
+               // One final test..be sure this re-tx does not extend "next"
+-              if ((s + SequenceNumber32 (c)) > next)
++              if ((seq + SequenceNumber32 (size)) > m_next)
+                 {
+-                  next = s + SequenceNumber32 (c);
+-                  i->count = ((s + SequenceNumber32 (c)) - i->seq); // And update count in hist
++                  m_next = seq + SequenceNumber32 (size);
++                  i->count = ((seq + SequenceNumber32 (size)) - i->seq); // And update count in hist
+                 }
+               break;
+             }
+@@ -141,51 +136,51 @@
+     }
+ }
+ 
+-Time RttEstimator::AckSeq (SequenceNumber32 a)
++Time RttEstimator::AckSeq (SequenceNumber32 ackSeq)
+ { // An ack has been received, calculate rtt and log this measurement
+   // Note we use a linear search (O(n)) for this since for the common
+   // case the ack'ed packet will be at the head of the list
+   Time m = Seconds (0.0);
+-  if (history.size () == 0) return (m);    // No pending history, just exit
+-  RttHistory& h = history.front ();
+-  if (!h.retx && a >= (h.seq + SequenceNumber32 (h.count)))
++  if (m_history.size () == 0) return (m);    // No pending history, just exit
++  RttHistory& h = m_history.front ();
++  if (!h.retx && ackSeq >= (h.seq + SequenceNumber32 (h.count)))
+     { // Ok to use this sample
+       m = Simulator::Now () - h.time; // Elapsed time
+       Measurement (m);                // Log the measurement
+       ResetMultiplier ();             // Reset multiplier on valid measurement
+     }
+   // Now delete all ack history with seq <= ack
+-  while(history.size () > 0)
++  while(m_history.size () > 0)
+     {
+-      RttHistory& h = history.front ();
+-      if ((h.seq + SequenceNumber32 (h.count)) > a) break;               // Done removing
+-      history.pop_front (); // Remove
++      RttHistory& h = m_history.front ();
++      if ((h.seq + SequenceNumber32 (h.count)) > ackSeq) break;               // Done removing
++      m_history.pop_front (); // Remove
+     }
+   return m;
+ }
+ 
+ void RttEstimator::ClearSent ()
+ { // Clear all history entries
+-  next = 1;
+-  history.clear ();
++  m_next = 1;
++  m_history.clear ();
+ }
+ 
+ void RttEstimator::IncreaseMultiplier ()
+ {
+-  multiplier = std::min (multiplier * 2.0, m_maxMultiplier);
++  m_multiplier = (m_multiplier*2 < m_maxMultiplier) ? m_multiplier*2 : m_maxMultiplier;
+ }
+ 
+ void RttEstimator::ResetMultiplier ()
+ {
+-  multiplier = 1.0;
++  m_multiplier = 1;
+ }
+ 
+ void RttEstimator::Reset ()
+ { // Reset to initial state
+-  next = 1;
+-  est = 1; // XXX: we should go back to the 'initial value' here. Need to add support in Object for this.
+-  history.clear ();         // Remove all info from the history
+-  nSamples = 0;
++  m_next = 1;
++  m_currentEstimatedRtt = m_initialEstimatedRtt;
++  m_history.clear ();         // Remove all info from the history
++  m_nSamples = 0;
+   ResetMultiplier ();
+ }
+ 
+@@ -204,55 +199,55 @@
+     .SetParent<RttEstimator> ()
+     .AddConstructor<RttMeanDeviation> ()
+     .AddAttribute ("Gain",
+-                   "XXX",
++                   "Gain used in estimating the RTT, must be 0 < Gain < 1",
+                    DoubleValue (0.1),
+-                   MakeDoubleAccessor (&RttMeanDeviation::gain),
++                   MakeDoubleAccessor (&RttMeanDeviation::m_gain),
+                    MakeDoubleChecker<double> ())
+   ;
+   return tid;
+ }
+ 
+ RttMeanDeviation::RttMeanDeviation() :
+-  variance (0) 
++  m_variance (0) 
+ { 
+ }
+ 
+ RttMeanDeviation::RttMeanDeviation (const RttMeanDeviation& c)
+-  : RttEstimator (c), gain (c.gain), variance (c.variance)
++  : RttEstimator (c), m_gain (c.m_gain), m_variance (c.m_variance)
+ {
+ }
+ 
+ void RttMeanDeviation::Measurement (Time m)
+ {
+-  if (nSamples)
++  if (m_nSamples)
+     { // Not first
+-      int64x64_t err = m - est;
+-      est = est + gain * err;         // estimated rtt
+-      variance = variance + gain * (Abs (err) - variance); // variance of rtt
++      Time err(m - m_currentEstimatedRtt);
++      m_currentEstimatedRtt += m_gain * err;  // estimated rtt
++      m_variance += m_gain * (Abs (err) - m_variance);   // variance of rtt
+     }
+   else
+     { // First sample
+-      est = m;                        // Set estimate to current
++      m_currentEstimatedRtt = m;             // Set estimate to current
+       //variance = sample / 2;               // And variance to current / 2
+-      variance = m; // try this
++      m_variance = m; // try this
+     }
+-  nSamples++;
++  m_nSamples++;
+ }
+ 
+ Time RttMeanDeviation::RetransmitTimeout ()
+ {
+-  // If not enough samples, justjust return 2 times estimate
++  // If not enough samples, just return 2 times estimate
+   //if (nSamples < 2) return est * 2;
+   int64x64_t retval;
+-  if (variance < est / 4.0)
++  if (m_variance < m_currentEstimatedRtt / 4.0)
+     {
+-      retval = est * 2 * multiplier;            // At least twice current est
++      retval = m_currentEstimatedRtt * 2 * m_multiplier;            // At least twice current est
+     }
+   else
+     {
+-      retval = (est + 4 * variance) * multiplier; // As suggested by Jacobson
++      retval = (m_currentEstimatedRtt + 4 * m_variance) * m_multiplier; // As suggested by Jacobson
+     }
+-  retval = Max (retval, minrto);
++  retval = Max (retval, m_minRto);
+   return Time (retval);
+ }
+ 
+@@ -263,7 +258,13 @@
+ 
+ void RttMeanDeviation::Reset ()
+ { // Reset to initial state
+-  variance = 0;
++  m_variance = 0;
+   RttEstimator::Reset ();
+ }
++void RttMeanDeviation::Gain (double g)
++{
++  NS_ASSERT_MSG( (g > 0) && (g < 1), "RttMeanDeviation: Gain must be less than 1 and greater than 0" );
++  m_gain = g;
++}
++
+ } //namepsace ns3
+diff --git a/src/internet/model/rtt-estimator.h b/src/internet/model/rtt-estimator.h
+--- a/src/internet/model/rtt-estimator.h
++++ b/src/internet/model/rtt-estimator.h
+@@ -35,14 +35,14 @@
+ /**
+  * \ingroup tcp
+  *
+- * \brief Implements several variations of round trip time estimators
++ * \brief Helper class to store RTT measurements
+  */
+ class RttHistory {
+ public:
+   RttHistory (SequenceNumber32 s, uint32_t c, Time t);
+   RttHistory (const RttHistory& h); // Copy constructor
+ public:
+-  SequenceNumber32  seq;    // First sequence number in packet sent
++  SequenceNumber32  seq;  // First sequence number in packet sent
+   uint32_t        count;  // Number of bytes sent
+   Time            time;   // Time this one was sent
+   bool            retx;   // True if this has been retransmitted
+@@ -50,68 +50,149 @@
+ 
+ typedef std::deque<RttHistory> RttHistory_t;
+ 
+-class RttEstimator : public Object {  //  Base class for all RTT Estimators
++/**
++ * \ingroup tcp
++ *
++ * \brief Base class for all RTT Estimators
++ */
++class RttEstimator : public Object {
+ public:
+   static TypeId GetTypeId (void);
+ 
+   RttEstimator();
+-  RttEstimator(const RttEstimator&); // Copy constructor
+   virtual ~RttEstimator();
+ 
+-  virtual void SentSeq (SequenceNumber32, uint32_t);
+-  virtual Time AckSeq (SequenceNumber32);
++  /**
++   * \brief Note that a particular sequence has been sent
++   * \param seq the packet sequence number.
++   * \param size the packet size.
++   */
++  virtual void SentSeq (SequenceNumber32 seq, uint32_t size);
++
++  /**
++   * \brief Note that a particular ack sequence has been received
++   * \param ackSeq the ack sequence number.
++   * \return The measured RTT for this ack.
++   */
++  virtual Time AckSeq (SequenceNumber32 ackSeq);
++
++  /**
++   * \brief Clear all history entries
++   */
+   virtual void ClearSent ();
+-  virtual void   Measurement (Time t) = 0;
++
++  /**
++   * \brief Add a new measurement to the estimator. Pure virtual function.
++   * \param t the new RTT measure.
++   */
++  virtual void  Measurement (Time t) = 0;
++
++  /**
++   * \brief Returns the estimated RTO. Pure virtual function.
++   * \return the estimated RTO.
++   */
+   virtual Time RetransmitTimeout () = 0;
+-  void Init (SequenceNumber32 s) { next = s; }
++
+   virtual Ptr<RttEstimator> Copy () const = 0;
++
++  /**
++   * \brief Increase the estimation multiplier up to MaxMultiplier.
++   */
+   virtual void IncreaseMultiplier ();
++
++  /**
++   * \brief Resets the estimation multiplier to 1.
++   */
+   virtual void ResetMultiplier ();
++
++  /**
++   * \brief Resets the estimation to its initial state.
++   */
+   virtual void Reset ();
+ 
++  /**
++   * \brief Sets the Minimum RTO.
++   * \param minRto The minimum RTO returned by the estimator.
++   */
+   void SetMinRto (Time minRto);
++
++  /**
++   * \brief Get the Minimum RTO.
++   * \return The minimum RTO returned by the estimator.
++   */
+   Time GetMinRto (void) const;
+-  void SetEstimate (Time estimate);
+-  Time GetEstimate (void) const;
++
++  /**
++   * \brief Sets the current RTT estimate (forcefully).
++   * \param estimate The current RTT estimate.
++   */
++  void SetCurrentEstimate (Time estimate);
++
++  /**
++   * \brief gets the current RTT estimate.
++   * \return The current RTT estimate.
++   */
++  Time GetCurrentEstimate (void) const;
+ 
+ private:
+-  SequenceNumber32        next;    // Next expected sequence to be sent
+-  RttHistory_t history; // List of sent packet
+-  double m_maxMultiplier;
+-public:
+-  int64x64_t       est;     // Current estimate
+-  int64x64_t       minrto; // minimum value of the timeout
+-  uint32_t      nSamples; // Number of samples
+-  double       multiplier;   // RTO Multiplier
++  SequenceNumber32 m_next;    // Next expected sequence to be sent
++  RttHistory_t m_history;     // List of sent packet
++  u_int16_t m_maxMultiplier;
++  Time m_initialEstimatedRtt;
++
++protected:
++  int64x64_t   m_currentEstimatedRtt;     // Current estimate
++  int64x64_t   m_minRto;                  // minimum value of the timeout
++  uint32_t     m_nSamples;                // Number of samples
++  u_int16_t    m_multiplier;              // RTO Multiplier
+ };
+ 
+-// The "Mean-Deviation" estimator, as discussed by Van Jacobson
+-// "Congestion Avoidance and Control", SIGCOMM 88, Appendix A
+-
+-//Doc:Class Class {\tt RttMeanDeviation} implements the "Mean--Deviation" estimator
+-//Doc:Class as described by Van Jacobson
+-//Doc:Class "Congestion Avoidance and Control", SIGCOMM 88, Appendix A
++/**
++ * \ingroup tcp
++ *
++ * \brief The "Mean--Deviation" RTT estimator, as discussed by Van Jacobson
++ *
++ * This class implements the "Mean--Deviation" RTT estimator, as discussed
++ * by Van Jacobson and Michael J. Karels, in
++ * "Congestion Avoidance and Control", SIGCOMM 88, Appendix A
++ *
++ */
+ class RttMeanDeviation : public RttEstimator {
+ public:
+   static TypeId GetTypeId (void);
+ 
+   RttMeanDeviation ();
+ 
++  RttMeanDeviation (const RttMeanDeviation&);
+ 
+-  //Doc:Method
+-  RttMeanDeviation (const RttMeanDeviation&); // Copy constructor
+-  //Doc:Desc Copy constructor.
+-  //Doc:Arg1 {\tt RttMeanDeviation} object to copy.
++  /**
++   * \brief Add a new measurement to the estimator.
++   * \param measure the new RTT measure.
++   */
++  void Measurement (Time measure);
+ 
+-  void Measurement (Time);
++  /**
++   * \brief Returns the estimated RTO.
++   * \return the estimated RTO.
++   */
+   Time RetransmitTimeout ();
++
+   Ptr<RttEstimator> Copy () const;
++
++  /**
++   * \brief Resets sthe estimator.
++   */
+   void Reset ();
+-  void Gain (double g) { gain = g; }
+ 
+-public:
+-  double       gain;       // Filter gain
+-  int64x64_t   variance;   // Current variance
++  /**
++   * \brief Sets the estimator Gain.
++   * \param g the gain, where 0 < g < 1.
++   */
++  void Gain (double g);
++
++private:
++  double       m_gain;       // Filter gain
++  int64x64_t   m_variance;   // Current variance
+ };
+ } // namespace ns3
+ 

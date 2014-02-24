@@ -14,8 +14,9 @@
 
 # Unnecessary files
 documentation
-traces
 *.*~
 ns-3.13/.waf*
 ns-3.13/build
+ns-3.13/traces
+ns-3.13/Debug
 ns-3

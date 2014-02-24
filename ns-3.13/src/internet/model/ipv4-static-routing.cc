@@ -558,10 +558,11 @@ Ipv4StaticRouting::RouteInput  (Ptr<const Packet> p, const Ipv4Header &ipHeader,
   // Check if input device supports IP forwarding
   if (m_ipv4->IsForwarding (iif) == false)
     {
-      NS_LOG_LOGIC ("Forwarding disabled for this interface");
-      ecb (p, ipHeader, Socket::ERROR_NOROUTETOHOST);
+	  NS_LOG_LOGIC ("Forwarding disabled for this interface");
+      ecb (p, ipHeader, Socket::ERROR_NOTERROR);
       return false;
     }
+
   // Next, try to find a route
   Ptr<Ipv4Route> rtentry = LookupStatic (ipHeader.GetDestination ());
   if (rtentry != 0)

@@ -219,10 +219,12 @@ InterferenceHelper::CalculateSnr (double signal, double noiseInterference, WifiM
   static const double BOLTZMANN = 1.3803e-23;
   // Nt is the power of thermal noise in W
   double Nt = BOLTZMANN * 290.0 * mode.GetBandwidth ();
+
   // receiver noise Floor (W) which accounts for thermal noise and non-idealities of the receiver
   double noiseFloor = m_noiseFigure * Nt;
   double noise = noiseFloor + noiseInterference;
   double snr = signal / noise;
+
   return snr;
 }
 

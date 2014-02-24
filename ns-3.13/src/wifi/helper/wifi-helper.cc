@@ -97,7 +97,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
     {
       Ptr<Node> node = *i;
       Ptr<WifiNetDevice> device = CreateObject<WifiNetDevice> ();
-      Ptr<WifiRemoteStationManager> manager = m_stationManager.Create<WifiRemoteStationManager> ();
+      Ptr<WifiRemoteStationManager> manager = m_stationManager.Create <WifiRemoteStationManager> ();
       Ptr<WifiMac> mac = macHelper.Create ();
       Ptr<WifiPhy> phy = phyHelper.Create (node, device);
       mac->SetAddress (Mac48Address::Allocate ());
@@ -108,7 +108,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       device->SetRemoteStationManager (manager);
       node->AddDevice (device);
       devices.Add (device);
-      NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject<MobilityModel> ());
+      NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject <MobilityModel> ());
     }
   return devices;
 }

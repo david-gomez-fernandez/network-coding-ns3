@@ -25,6 +25,13 @@
 #include "ns3/object.h"
 #include "ns3/random-variable.h"
 
+////David/Ramón
+#include <map>
+#include "ns3/node.h"
+#include "ns3/simulator.h"
+#include "ns3/packet.h"
+////End David/Ramón
+
 namespace ns3 {
 
 class Packet;
@@ -268,9 +275,94 @@ private:
 
   PacketList m_packetList;
   uint32_t m_timesInvoked;
-
 };
 
+////David/Ramón
+/**
+ * Proprietary tag associated with this concrete error model class. Namely, this operation will work if and only if the error model
+ * has conscience of both the identity of the node which has transmitted the frame and the node which is receiving it. Hence, we need
+ * to share with the model both node IDs.
+ */
+/*
+ * \ingroup errormodel
+ *
+ * \brief Naive Error model that defines a packet as corrupt, depending on the value obtained from the MatrixPropagationErrorModel
+ */
+
+class MatrixErrorModel: public ErrorModel
+{
+public:
+
+	static TypeId GetTypeId (void);
+	/*
+	 * Default constructor
+	 */
+	MatrixErrorModel ();
+
+	/*
+	 * Default destructor
+	 */
+	virtual ~MatrixErrorModel ();
+
+	/**
+	 * \brief Set FER ([0,1]) between a pair of ns-3 objects (typically, nodes).
+	 *
+	 * \param a ma          Source mobility model
+	 * \param b mb          Destination mobility model
+	 * \param fer        a -> b FER, values from 0 to 1
+	 */
+	void SetFer (u_int16_t tx, u_int16_t rx, double fer);
+
+	/**
+	 * Set default loss (in dB, positive) to be used, infinity if not set
+	 * \param fer Default FER value (by default, FER = 0.0)
+	 */
+	inline void SetDefaultFer (double fer) {m_default = fer;}
+
+	/**
+	 * \param rx The receiver node index
+	 */
+	inline void SetReceiver (u_int16_t rx) {m_receiver = rx;}
+
+	/**
+	 * \returns The receiver node index
+	 */
+	inline u_int16_t GetReceiver () {return m_receiver;}
+
+	/**
+	 * \param tx The transmitter node index
+	 */
+	inline void SetTransmitter (u_int16_t tx) {m_transmitter = tx;}
+
+	/**
+	 * \returns The transmitter node index
+	 */
+	inline u_int16_t GetTransmitter () {return m_transmitter;}
+	/**
+	 * Force a frame to be correct (or corrupt prone)
+	 * \parameter
+	 */
+	inline void SetCorrect (bool flag) {m_isCorrect = flag;}
+
+
+
+private:
+	//Inherited pure virtual methods
+	virtual bool DoCorrupt (Ptr<Packet> p);
+	virtual void DoReset ();
+
+private:
+	/// default loss
+	double m_default;
+	u_int16_t m_receiver; 			//Node ID of the receiver entity
+	u_int16_t m_transmitter;		//Node ID of the transmitter entity
+	bool m_isCorrect;				//Flag that forces a received frame to be correct
+
+	typedef std::pair< u_int16_t, u_int16_t > LinkPair;  //Key element: TX/RX tuple. Data: Corresponding FER value of the link
+	/// Fixed FER between pair of nodes
+	std::map<LinkPair, double> m_ferMatrix;
+
+};
 
 } // namespace ns3
 #endif

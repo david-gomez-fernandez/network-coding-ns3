@@ -210,6 +210,10 @@ public:
   virtual void SetCompressedBlockAckTimeout (Time blockAckTimeout);
   virtual Time GetCompressedBlockAckTimeout (void) const;
 
+  ////David/Ramón
+  inline Ptr<DcaTxop> GetDcaTxopPub () {return GetDcaTxop();}
+  ////End David/Ramón
+
 protected:
   virtual void DoStart ();
   virtual void DoDispose ();

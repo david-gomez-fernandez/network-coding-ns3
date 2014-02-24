@@ -48,6 +48,7 @@ class WifiMac;
  * This class holds together ns3::WifiChannel, ns3::WifiPhy,
  * ns3::WifiMac, and, ns3::WifiRemoteStationManager.
  */
+
 class WifiNetDevice : public NetDevice
 {
 public:

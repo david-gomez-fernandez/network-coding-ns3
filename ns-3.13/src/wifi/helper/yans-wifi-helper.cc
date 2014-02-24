@@ -34,6 +34,10 @@
 #include "ns3/abort.h"
 #include "ns3/log.h"
 
+#include <stdio.h>
+#include <ns3/error-model.h>
+
+
 NS_LOG_COMPONENT_DEFINE ("YansWifiHelper");
 
 namespace ns3 {
@@ -125,6 +129,14 @@ YansWifiChannelHelper::AddPropagationLoss (std::string type,
   m_propagationLoss.push_back (factory);
 }
 
+
+void YansWifiChannelHelper::AddPropagationLoss(Ptr<PropagationLossModel> loss)
+{
+ 	m_propagationLossModelVector.push_back(loss);
+
+}
+
+
 void
 YansWifiChannelHelper::SetPropagationDelay (std::string type,
                                             std::string n0, const AttributeValue &v0,
@@ -154,6 +166,22 @@ YansWifiChannelHelper::Create (void) const
 {
   Ptr<YansWifiChannel> channel = CreateObject<YansWifiChannel> ();
   Ptr<PropagationLossModel> prev = 0;
+
+    	if (m_propagationLossModelVector.size())
+    	{
+    		Ptr<PropagationLossModel> prev = 0;
+    		for(std::vector<Ptr <PropagationLossModel> >::const_iterator i = m_propagationLossModelVector.begin(); i != m_propagationLossModelVector.end();++i)
+    		{
+    			if (prev != 0)
+    				prev->SetNext(*i);
+    			if (m_propagationLossModelVector.begin() == i)
+    				channel->SetPropagationLossModel(*i);
+    			prev = *i;
+    		}
+    	}
+    	else
+    	{
+
   for (std::vector<ObjectFactory>::const_iterator i = m_propagationLoss.begin (); i != m_propagationLoss.end (); ++i)
     {
       Ptr<PropagationLossModel> cur = (*i).Create<PropagationLossModel> ();
@@ -167,6 +195,9 @@ YansWifiChannelHelper::Create (void) const
         }
       prev = cur;
     }
+
+    	}
+
   Ptr<PropagationDelayModel> delay = m_propagationDelay.Create<PropagationDelayModel> ();
   channel->SetPropagationDelayModel (delay);
   return channel;
@@ -178,6 +209,9 @@ YansWifiPhyHelper::YansWifiPhyHelper ()
     m_pcapDlt (PcapHelper::DLT_IEEE802_11)
 {
   m_phy.SetTypeId ("ns3::YansWifiPhy");
+
+  m_errorModel = 0;
+
 }
 
 YansWifiPhyHelper
@@ -228,12 +262,45 @@ YansWifiPhyHelper::SetErrorRateModel (std::string name,
   m_errorRateModel.Set (n7, v7);
 }
 
+void YansWifiPhyHelper::SetErrorModel(std::string name, std::string n0, const AttributeValue & v0, std::string n1, const AttributeValue & v1, std::string n2, const AttributeValue & v2, std::string n3, const AttributeValue & v3, std::string n4, const AttributeValue & v4, std::string n5, const AttributeValue & v5, std::string n6, const AttributeValue & v6, std::string n7, const AttributeValue & v7)
+{
+	;
+	m_errorModelFactory = ObjectFactory();
+	m_errorModelFactory.SetTypeId(name);
+	m_errorModelFactory.Set(n0, v0);
+	m_errorModelFactory.Set(n1, v1);
+	m_errorModelFactory.Set(n2, v2);
+	m_errorModelFactory.Set(n3, v3);
+	m_errorModelFactory.Set(n4, v4);
+	m_errorModelFactory.Set(n5, v5);
+	m_errorModelFactory.Set(n6, v6);
+	m_errorModelFactory.Set(n7, v7);
+}
+
+Ptr<ErrorModel> YansWifiPhyHelper::GetErrorModel() const
+{
+	return m_errorModel;
+}
+
+void YansWifiPhyHelper::SetErrorModel(Ptr<ErrorModel> errorModel)
+{
+	this->m_errorModel = errorModel;
+}
+
+
 Ptr<WifiPhy>
 YansWifiPhyHelper::Create (Ptr<Node> node, Ptr<WifiNetDevice> device) const
 {
   Ptr<YansWifiPhy> phy = m_phy.Create<YansWifiPhy> ();
   Ptr<ErrorRateModel> error = m_errorRateModel.Create<ErrorRateModel> ();
   phy->SetErrorRateModel (error);
+
+  ////David/Ramón
+  //If declared error model, set it as attribute
+  if (m_errorModel )
+        phy->SetErrorModel(m_errorModel);
+  ////End David/Ramón
+
   phy->SetChannel (m_channel);
   phy->SetMobility (node);
   phy->SetDevice (device);

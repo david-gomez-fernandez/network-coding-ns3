@@ -33,6 +33,16 @@ namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED (Application);
 
+////David/Ramón
+
+ApplicationStatistics::ApplicationStatistics (): txCounter(0), rxCounter(0)
+{
+
+}
+
+////End David/Ramón
+
+
 // Application Methods
 
 TypeId 
@@ -60,6 +70,10 @@ Application::Application()
 // \brief Application Destructor
 Application::~Application()
 {
+	////David/Ramón
+	m_stats.txTimestamp.clear();
+	m_stats.rxTimestamp.clear();
+	////End David/Ramón
 }
 
 void
@@ -114,6 +128,28 @@ void Application::StartApplication ()
 void Application::StopApplication ()
 { // Provide null functionality in case subclass is not interested
 }
+
+////David/Ramón
+Ptr<Packet> Application::CreateRandomPayload (u_int32_t packetLength)
+{
+	u_int32_t i;
+	UniformVariable ranvar (0, 255);
+	u_int8_t *buffer;
+	Ptr<Packet> resultPkt;
+
+	buffer = (u_int8_t *) malloc (packetLength);
+	for (i = 0; i < packetLength; i++ )
+	{
+		buffer [i] = ranvar.GetInteger(0,255);
+	}
+
+	resultPkt = Create<Packet> (buffer, packetLength);
+
+	free (buffer);
+	return resultPkt;
+}
+////David/Ramón
+
 
 } // namespace ns3
 

@@ -291,8 +291,8 @@ InternetStackHelper::Reset (void)
 void 
 InternetStackHelper::SetRoutingHelper (const Ipv4RoutingHelper &routing)
 {
-  delete m_routing;
-  m_routing = routing.Copy ();
+	delete m_routing;
+	m_routing = routing.Copy ();
 }
 
 void
@@ -357,7 +357,7 @@ InternetStackHelper::Install (Ptr<Node> node) const
     {
       if (node->GetObject<Ipv4> () != 0)
         {
-          NS_FATAL_ERROR ("InternetStackHelper::Install (): Aggregating " 
+          NS_FATAL_ERROR ("InternetStackHelper::Install (): Aggregating "
                           "an InternetStack to a node with an existing Ipv4 object");
           return;
         }
@@ -369,6 +369,7 @@ InternetStackHelper::Install (Ptr<Node> node) const
       node->AggregateObject (m_tcpFactory.Create<Object> ());
       Ptr<PacketSocketFactory> factory = CreateObject<PacketSocketFactory> ();
       node->AggregateObject (factory);
+
       // Set routing
       Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
       Ptr<Ipv4RoutingProtocol> ipv4Routing = m_routing->Create (node);

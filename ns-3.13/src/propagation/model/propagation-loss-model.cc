@@ -66,6 +66,7 @@ PropagationLossModel::CalcRxPower (double txPowerDbm,
                                    Ptr<MobilityModel> b) const
 {
   double self = DoCalcRxPower (txPowerDbm, a, b);
+
   if (m_next != 0)
     {
       self = m_next->CalcRxPower (self, a, b);
@@ -87,7 +88,7 @@ RandomPropagationLossModel::GetTypeId (void)
                    RandomVariableValue (ConstantVariable (1.0)),
                    MakeRandomVariableAccessor (&RandomPropagationLossModel::m_variable),
                    MakeRandomVariableChecker ())
-  ;
+     ;
   return tid;
 }
 RandomPropagationLossModel::RandomPropagationLossModel ()
@@ -488,6 +489,7 @@ LogDistancePropagationLossModel::DoCalcRxPower (double txPowerDbm,
   double rxc = -m_referenceLoss - pathLossDb;
   NS_LOG_DEBUG ("distance="<<distance<<"m, reference-attenuation="<< -m_referenceLoss<<"dB, "<<
                 "attenuation coefficient="<<rxc<<"db");
+
   return txPowerDbm + rxc;
 }
 
@@ -743,10 +745,13 @@ MatrixPropagationLossModel::GetTypeId (void)
 MatrixPropagationLossModel::MatrixPropagationLossModel ()
   : PropagationLossModel (), m_default (std::numeric_limits<double>::max ())
 {
+	NS_LOG_FUNCTION(this);
+
 }
 
 MatrixPropagationLossModel::~MatrixPropagationLossModel ()
 {
+	NS_LOG_FUNCTION(this);
 }
 
 void 
@@ -786,13 +791,9 @@ MatrixPropagationLossModel::DoCalcRxPower (double txPowerDbm,
   std::map<MobilityPair, double>::const_iterator i = m_loss.find (std::make_pair (a, b));
 
   if (i != m_loss.end ())
-    {
       return txPowerDbm - i->second;
-    }
   else
-    {
       return txPowerDbm - m_default;
-    }
 }
 
 // ------------------------------------------------------------------------- //
@@ -810,12 +811,30 @@ RangePropagationLossModel::GetTypeId (void)
                    DoubleValue (250),
                    MakeDoubleAccessor (&RangePropagationLossModel::m_range),
                    MakeDoubleChecker<double> ())
+    ////David/Ramón
+    .AddAttribute ("FirstRangeDistance",
+                   "XXX",
+                   DoubleValue (20),
+                   MakeDoubleAccessor (&RangePropagationLossModel::m_firstRangeDistance),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("SecondRangeDistance",
+                   "XXX",
+                   DoubleValue (40),
+                   MakeDoubleAccessor (&RangePropagationLossModel::m_secondRangeDistance),
+                   MakeDoubleChecker<double> ())
+    ////End David/Ramón
   ;
   return tid;
 }
 
 RangePropagationLossModel::RangePropagationLossModel ()
 {
+	NS_LOG_FUNCTION_NOARGS();
+}
+
+RangePropagationLossModel::~RangePropagationLossModel ()
+{
+	NS_LOG_FUNCTION_NOARGS();
 }
 
 double
@@ -823,17 +842,144 @@ RangePropagationLossModel::DoCalcRxPower (double txPowerDbm,
                                           Ptr<MobilityModel> a,
                                           Ptr<MobilityModel> b) const
 {
+
   double distance = a->GetDistanceFrom (b);
-  if (distance <= m_range)
-    {
-      return txPowerDbm;
-    }
+
+  ////David/Ramón --> Change the operation
+//  if (distance <= m_range)
+//    {
+//      return txPowerDbm;
+//    }
+//  else
+//    {
+//      return -1000;
+//    }
+
+  if (distance <= m_firstRangeDistance)
+	  return txPowerDbm;
+  else if (distance <= m_secondRangeDistance)
+	  return txPowerDbm - 160.0;
   else
-    {
-      return -1000;
-    }
+	  return -1000;
+
 }
 
-// ------------------------------------------------------------------------- //
+/////David/Ramón
+////////////////  SimplePropagationLossModel (authors: David Gómez Fernández / Ramón Agüero Calvo)   //////////////////
+NS_OBJECT_ENSURE_REGISTERED (SimplePropagationLossModel);
+
+TypeId
+SimplePropagationLossModel::GetTypeId(void) {
+	static TypeId tid = TypeId ("ns3::SimplePropagationLossModel")
+	    .SetParent<PropagationLossModel> ()
+	    .AddConstructor<SimplePropagationLossModel> ()
+
+	.AddAttribute("MaxDistance",
+			"The distance from which all packets will be errored (FER = 1)",
+			DoubleValue(15.0),
+			MakeDoubleAccessor(&SimplePropagationLossModel::m_maxDistance),
+			MakeDoubleChecker<double> ())
+
+	.AddAttribute("Alpha", "Determines the distance (in meters) from which the transmission is set over an error-prone channel",
+			DoubleValue(0.5),
+			MakeDoubleAccessor(&SimplePropagationLossModel::m_alpha),
+			MakeDoubleChecker<double> ())
+
+	.AddAttribute("Beta", "Exponential parameter (1 for a linear behavior)",
+			DoubleValue(1.0),
+			MakeDoubleAccessor(&SimplePropagationLossModel::m_beta),
+			MakeDoubleChecker<double> ())
+
+	.AddAttribute ("RanVar", "Random variable which determine a packet to be successfully received or not.",
+			RandomVariableValue (UniformVariable (0.0, 1.0)),
+			MakeRandomVariableAccessor (&SimplePropagationLossModel::m_ranvar),
+			MakeRandomVariableChecker ())
+
+	;
+  return tid;
+}
+
+SimplePropagationLossModel::SimplePropagationLossModel ()
+{
+  NS_LOG_FUNCTION_NOARGS ();
+}
+
+SimplePropagationLossModel::~SimplePropagationLossModel ()
+{
+  NS_LOG_FUNCTION_NOARGS ();
+}
+
+float SimplePropagationLossModel::GetAlpha() const
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	return m_alpha;
+}
+
+void SimplePropagationLossModel::SetAlpha(float alpha)
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	m_alpha = alpha;
+}
+
+float SimplePropagationLossModel::GetBeta() const
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	return m_beta;
+}
+
+void SimplePropagationLossModel::SetBeta(float beta)
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	m_beta = beta;
+}
+
+float SimplePropagationLossModel::GetMaxDistance(void) const
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	return m_maxDistance;
+}
+
+void SimplePropagationLossModel::SetMaxDistance(float maxDistance)
+{
+	NS_LOG_FUNCTION_NOARGS ();
+	m_maxDistance = maxDistance;
+}
+
+double SimplePropagationLossModel::DoCalcRxPower(double txPowerDbm, Ptr<MobilityModel> a,
+		Ptr<MobilityModel> b) const
+{
+	NS_LOG_FUNCTION(this);
+	double distance = a->GetDistanceFrom (b);
+	double fer;
+
+	NS_ASSERT (distance >= 0);
+	if (distance < m_alpha * m_maxDistance)
+	{
+		fer = 0;
+	}
+	else if (distance < m_maxDistance)
+	{
+		fer = 1 - ((1 - pow((distance / m_maxDistance), m_beta))/ (1 - pow(m_alpha, m_beta)));
+	}
+	else
+	{
+		fer = 1;
+	}
+
+	NS_ASSERT(fer<=1);
+	NS_LOG_DEBUG ("FER =" << fer << " Distance = " << distance << " Max_distance = " << m_maxDistance << " Alpha = " << m_alpha << " Beta = " << m_beta);
+
+	if(m_ranvar.GetValue() <= fer)
+	{
+		NS_LOG_DEBUG("Frame error");
+		return -10000;
+	}
+	else
+	{
+		NS_LOG_DEBUG("Frame OK");
+		return txPowerDbm;
+	}
+}
+////End David/Ramón
 
 } // namespace ns3

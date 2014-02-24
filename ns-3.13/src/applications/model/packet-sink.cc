@@ -173,6 +173,10 @@ void PacketSink::HandleRead (Ptr<Socket> socket)
           //compiler warning in optimized builds
           (void) address;
         }
+      ////David/Ramón
+      m_stats.rxCounter ++;
+      m_stats.rxTimestamp.push_back(Simulator::Now().GetSeconds());
+      ////End David/Ramón
       m_rxTrace (packet, from);
     }
 }
