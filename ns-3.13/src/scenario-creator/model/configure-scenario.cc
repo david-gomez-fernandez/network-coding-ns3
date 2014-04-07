@@ -1324,9 +1324,10 @@ void ConfigureScenario::LoadStaticRoutingFromGraph (Ipv4StaticRoutingHelper stat
 	{
 		for (u_int8_t j = 0; j < iter->second.size() - 1; j++)
 		{
-			Ipv4Address srcAddress = m_nodeContainer.Get((int) source)->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal();
+			Ipv4Address srcAddress = m_nodeContainer.Get((int) source)->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal();                                     
 			Ipv4Address dstAddress = m_nodeContainer.Get((int) destination)->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal();
 			Ipv4Address nextHopAddress = m_nodeContainer.Get((int) iter->second[j+1])->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal();
+                                         
 
 			NS_LOG_DEBUG("Node " << (int) iter->second[j] + 1 << " IP address " <<
 					m_nodeContainer.Get((int) iter->second[j])->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal()
@@ -1334,14 +1335,14 @@ void ConfigureScenario::LoadStaticRoutingFromGraph (Ipv4StaticRoutingHelper stat
 
 			//Forward route
 			routingEntry = staticRouting.GetStaticRouting(m_nodeContainer.Get((int) iter->second[j])->GetObject<Ipv4 > ());
-			routingEntry->AddHostRouteTo(m_nodeContainer.Get((int) destination)->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal(),   //Destination address
-					m_nodeContainer.Get((int) iter->second[j+1])->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal(),				  //Nexthop address
+			routingEntry->AddHostRouteTo(dstAddress,   //Destination address
+					nextHopAddress,				  //Nexthop address
 					iter->first,	//Interface
 					0);		//Metric
 
 			//Backward route
 			routingEntry = staticRouting.GetStaticRouting(m_nodeContainer.Get((int) iter->second[j+1])->GetObject<Ipv4 > ());
-			routingEntry->AddHostRouteTo(m_nodeContainer.Get((int) source)->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal(),   //Destination address
+			routingEntry->AddHostRouteTo(srcAddress,   //Destination address
 					m_nodeContainer.Get((int) iter->second[j])->GetObject<Ipv4 > ()->GetAddress(iter->first, 0).GetLocal(),				  //Nexthop address
 					iter->first,	//Interface
 					0);		//Metric

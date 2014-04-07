@@ -361,8 +361,9 @@ void HiddenMarkovModelEntry::ChangeState ()
 //	u_int8_t i, maxState = 0;
 	u_int8_t i;
 //	double transitionProbability, max, randomSample;
-	double max, randomSample;
-	max = -1;
+	double randomSample;
+	// double max;
+	// max = -1;
 	UniformVariable ranvar (0.0, 1.0);
 
 	////New model
