@@ -91,8 +91,7 @@ typedef struct {
 
 class BearModelEntry;
 
-//Parameter to carry out the error decision
-	struct BearLogisticFunction {
+struct BearLogisticFunction {
 		BearLogisticFunction ();
 		BearLogisticFunction (const double a, const double b,
 				const double c, const int lowThreshold, const int highThreshold);
@@ -162,7 +161,7 @@ public:
 	 * \param params Struct that holds the logistic function parameters
 	 * \returns The FER value
 	 */
-	double GetBearFer (BearLogisticFunction *params);
+	double GetBearFer (const BearLogisticFunction& params);
 
 	/**
 	 * To obtain the SNR of a particular link, we need to know the identity of both source and sink nodes, in order to later look them into

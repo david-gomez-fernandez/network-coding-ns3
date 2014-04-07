@@ -106,7 +106,6 @@ BearPropagationLossModel::BearPropagationLossModel() : m_order (3),
 	NS_LOG_FUNCTION(this);
 	GetCoefficientsFromConfigurationFile("coefsAR.cfg");
 
-	u_int16_t totalNodes;
 	u_int16_t i, j;
 
 	Ptr<BearModelEntry> channel;
@@ -126,8 +125,6 @@ BearPropagationLossModel::BearPropagationLossModel() : m_order (3),
 	m_propagationLoss = aux;
 
 	//Create the map which contains the nodes' location (ConstantMobilityModel only)
-	totalNodes = NodeList().GetNNodes();
-
 	for (i = 0; i < (int) NodeList().GetNNodes(); i++) {
 		for (j = 0; j < (int) NodeList().GetNNodes(); j++) {
 			if (i != j) {

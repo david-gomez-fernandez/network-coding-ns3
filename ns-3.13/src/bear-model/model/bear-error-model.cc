@@ -78,9 +78,34 @@ BearErrorModel::BearErrorModel()
 	m_errorModelType = BEAR_MODEL;
 
 	//Static configuration for the IEEE 802.11b parameters
-	m_dataLogParams = BearLogisticFunction::BearLogisticFunction (1.24, 0.366, 6.88, 3, 16);
-	m_ackLogParams = BearLogisticFunction::BearLogisticFunction (1.00, 0.886, 6.88, 0, 13);
-	m_bcastCtrlLogParams = BearLogisticFunction::BearLogisticFunction (1.9, 0.6, 0.0, 0, 10);
+//	m_dataLogParams = BearLogisticFunction::BearLogisticFunction (1.24, 0.366, 6.88, 3, 16);
+//	m_ackLogParams = BearLogisticFunction::BearLogisticFunction (1.00, 0.886, 6.88, 0, 13);
+//	m_bcastCtrlLogParams = BearLogisticFunction::BearLogisticFunction (1.9, 0.6, 0.0, 0, 10);
+        
+//        double a;
+//		double b;
+//		double c;
+//		int lowThreshold;
+//		int highThreshold;
+//        
+        //Parameter initialization (to work with g++ > 4.4)
+        m_dataLogParams.a = 1.24;
+        m_dataLogParams.b = 0.366;
+        m_dataLogParams.c = 6.88;
+        m_dataLogParams.lowThreshold = 3;
+        m_dataLogParams.highThreshold = 16;
+        
+        m_ackLogParams.a = 1.00;
+        m_ackLogParams.b = 0.886;
+        m_ackLogParams.c = 6.88;
+        m_ackLogParams.lowThreshold = 0;
+        m_ackLogParams.highThreshold = 13;
+        
+        m_bcastCtrlLogParams.a = 1.9;
+        m_bcastCtrlLogParams.b = 0.6;
+        m_bcastCtrlLogParams.c = 0.00;
+        m_bcastCtrlLogParams.lowThreshold = 0;
+        m_bcastCtrlLogParams.highThreshold = 10;
 }
 
 BearErrorModel::~BearErrorModel()
@@ -159,7 +184,7 @@ bool BearErrorModel::CorruptDataFrame(Ptr<Packet>)
 			fer = 0.0;
 			break;
 		case BEAR_MODEL:
-			fer = GetBearFer(&m_dataLogParams);
+			fer = GetBearFer(m_dataLogParams);
 			break;
 		case SHADOWING_MODEL:
 			if (m_snr < 9)
@@ -249,7 +274,7 @@ bool BearErrorModel::CorruptBcastCtrlFrame(Ptr<Packet>)
 		fer = 0.0;
 		break;
 	case BEAR_MODEL:
-		fer = GetBearFer(&m_bcastCtrlLogParams);
+		fer = GetBearFer(m_bcastCtrlLogParams);
 		break;
 	case SHADOWING_MODEL:
 		if (m_snr < 1.7)
@@ -280,18 +305,18 @@ bool BearErrorModel::CorruptBcastCtrlFrame(Ptr<Packet>)
 	return error;
 }
 
-double BearErrorModel::GetBearFer(BearLogisticFunction::BearLogisticFunction *params)
+double BearErrorModel::GetBearFer(const BearLogisticFunction& params)
 {
 	NS_LOG_FUNCTION_NOARGS();
 	double fer;
 
-	if (m_snr < params->lowThreshold)
+	if (m_snr < params.lowThreshold)
 		fer = 1;
-	else if (m_snr < params->highThreshold)
+	else if (m_snr < params.highThreshold)
 	{
-		fer = params->a / (1 + exp(params->b * (m_snr - params->c)));
-		NS_LOG_DEBUG ("FER = " << params->a << " / (1 + e^(" << params->b << "* (" << m_snr << 				\
-				" - " << params->c << "))) = " << fer);
+		fer = params.a / (1 + exp(params.b * (m_snr - params.c)));
+		NS_LOG_DEBUG ("FER = " << params.a << " / (1 + e^(" << params.b << "* (" << m_snr << 				\
+				" - " << params.c << "))) = " << fer);
 	}
 	else
 	{
