@@ -10,11 +10,11 @@ In this repository we present the following features, whose operation can be spl
 
 ## External libraries ##
 
-We have needed to use a number of functionalities that belongs to external libraries: 
+We have needed to use a number of functionalities that belongs to external libraries:
 
-1. [Open SSL](https://www.openssl.org/). The open source toolkit for SSL/TLS. Namely, we have chosen the popular *MD5* function to carry out the **hash** operations within the Network Coding module.
-2. [FFLAS/FFPACK](http://linalg.org/fflas-ffpack-html/index.html). Another C++ mathematical library that allows us to work with extended Galois Fields $$$GF(2^q)$$$.
-2. [IT++](http://itpp.sourceforge.net/4.3.1/). C++ mathematical library. Namely, we will use its Galois Field $$$GF(2)$$$ operations, since its performance is significatively higher that the one achieved by the previous one over the base field $$$GF(2)$$$. The main drawback of this library is that it do not support all the matrix operations we need for extended *GFs*.
+1. [Open SSL](https://www.openssl.org/). The open source toolkit for SSL/TLS. Namely, we have chosen the popular *MD5* function to carry out the **hash** operations within the Network Coding module. It can be easily found through i.e. the Synaptic package repository.
+2. [IT++](http://itpp.sourceforge.net/4.3.1/) (*libitpp*). C++ mathematical library. Namely, we will use its Galois Field GF(2) operations, since its performance is significatively higher that the one achieved by the previous one over the base field GF(2). The main drawback of this library is that it do not support all the matrix operations we need for extended *GFs*. As well as the previous one, there is no problem to find this library.
+3. [FFLAS/FFPACK](http://linalg.org/fflas-ffpack-html/index.html). Another C++ mathematical library that allows us to work with extended Galois Fields GF(2^q). Undoubtely, this is the most problematic library to install. First, it has various dependencies that must be installed before the final package (i.e. Givaro, lapack, etc.). I strongly recommend to Google it before installing. Besides, there is a bug located in this library which will trigger a system crash. The solution we have followed is to slightly tweak one of the header (namely, */fflas-ffpack/utils/debug.h*), introducing an anonymous namespace. You can find the solution [here](https://groups.google.com/forum/#!topic/ffpack-devel/GT2lNc0x-n4).
 
 This implies the need to link them at the corresponding "wscript" files (take a look at the *network-coding-module*).
 
@@ -33,11 +33,20 @@ NEW PROPRIETARY CODE
 
 ```
 
-## Current status  @ 02/24/2014 ##
+## Working tests @ 04/07/2014 ##
+
+We have tested the whole solution under the following g++ compilers, including the optimized compilation:
+- g++ 4.4.7
+- g++ 4.6.3 -> This last test has been recently assessed over a fresh Linux OS install.
+
+Although there are newer compiler versions, we have experimented a number of issues with them, opting for using older ones. If the problem persist, try [this](http://stackoverflow.com/questions/7832892/how-to-change-the-default-gcc-compiler-in-ubuntu) to force a explicit version of the compilers
+
+## Current status  @ 04/07/2014 ##
 
 The current version of the project still lacks in various aspects, which will be tackled in forthcoming updates:
 1. The *InterFlowNetworkCodingProtocol* entity is still under construction. Although we have already provided many valid results that have been included into various publications, we are currently merging it with the new solution, based on a single common abstract base class (*NetworkCodingL4Protocol*). For that purpose, there are still a number of tweaks that must be addressed before considering that this protocol is fully ready. For a further description of the protocol, the reader might refer to [6] and [7].
 2. By the way, we are still trying to *squeeze* the performance of the *IntraFlowNetworkCodingProtocol*, optimizing its performance with brand new features. However, the main drawback of this part of the work is that we have not any publication accepted, thus we cannot link any reference :-( that help the reader to outline the broad range of possibilities brought about by this sort of Network Coding.
+3. For the sake of an easier application, we are preparing a patch that 
 
 In addition, we foresee to perform the following operations:
 - Complete the documentation (i.e. individual README files that deepen into the details for each of the brand new modules).
